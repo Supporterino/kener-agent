@@ -3,20 +3,19 @@ tag-template: "v$NEXT_PATCH_VERSION"
 
 categories:
   - title: "Features ✨"
-    labels: []
-    commit-message-pattern: "^feat"      # match commits starting with 'feat:'
+    labels:
+      - feature
+      - enhancement
   - title: "Bug Fixes 🐛"
-    labels: []
-    commit-message-pattern: "^fix"       # match commits starting with 'fix:'
+    labels:
+      - bug
   - title: "Documentation 📝"
-    labels: []
-    commit-message-pattern: "^docs"
-  - title: "Refactoring ⚡️"
-    labels: []
-    commit-message-pattern: "^refactor"
+    labels:
+      - docs
   - title: "Chores ⚙️"
-    labels: []
-    commit-message-pattern: "^(chore|build|ci)"
+    labels:
+      - chore
+      - refactor
 
 change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 template: |
