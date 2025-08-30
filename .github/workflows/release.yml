@@ -20,7 +20,7 @@ jobs:
       - name: Label PR based on Conventional Commits
         uses: actions-ecosystem/action-add-labels@v1
         with:
-          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+          github_token: ${{ secrets.REPO_TOKEN }}
           labels: |
             feat:feature
             fix:bug
@@ -42,7 +42,7 @@ jobs:
         with:
           config-name: release-drafter.yml
         env:
-          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
 
   # -----------------------------------
   # Job 3: Build the package
@@ -110,4 +110,4 @@ jobs:
         with:
           files: dist/*
         env:
-          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
