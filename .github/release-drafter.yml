@@ -5,17 +5,18 @@ categories:
   - title: "Features ✨"
     labels:
       - feature
-      - enhancement
   - title: "Bug Fixes 🐛"
     labels:
       - bug
   - title: "Documentation 📝"
     labels:
       - docs
+  - title: "Refactoring ⚡️"
+    labels:
+      - refactor
   - title: "Chores ⚙️"
     labels:
       - chore
-      - refactor
 
 change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 template: |
