@@ -1,0 +1,24 @@
+name-template: "v$NEXT_PATCH_VERSION 🚀"
+tag-template: "v$NEXT_PATCH_VERSION"
+
+categories:
+  - title: "Features ✨"
+    labels: []
+    commit-message-pattern: "^feat"      # match commits starting with 'feat:'
+  - title: "Bug Fixes 🐛"
+    labels: []
+    commit-message-pattern: "^fix"       # match commits starting with 'fix:'
+  - title: "Documentation 📝"
+    labels: []
+    commit-message-pattern: "^docs"
+  - title: "Refactoring ⚡️"
+    labels: []
+    commit-message-pattern: "^refactor"
+  - title: "Chores ⚙️"
+    labels: []
+    commit-message-pattern: "^(chore|build|ci)"
+
+change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
+template: |
+  ## Changes
+  $CHANGES

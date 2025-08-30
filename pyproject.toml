@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kener-agent"
+version = "0.1.0"
+description = "A CLI tool to declaratively manage your monitors across multiple kener instances in YAML."
+readme = "README.md"
+authors = [
+    { name = "Supporterino", email = "lars@roth-kl.de" }
+]
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+    "PyYAML>=6.0",
+    "tabulate>=0.9.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/Supporterino/kener-agent"
+
+[tool.bumpver]
+current_version = "0.1.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "chore: bump version {old_version} -> {new_version}"
+tag_message = "chore: :bookmark: release {new_version}"
+push = true
+
+[project.scripts]
+kener-agent = "kener_agent.cli:main"
