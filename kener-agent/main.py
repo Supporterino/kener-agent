@@ -357,15 +357,6 @@ def cmd_version(args):
     print(get_version())
 
 
-def cmd_set_instance(args):
-    config = load_config()
-    if args.name not in config.get("instances", {}):
-        logging.error("Instance '%s' not found.", args.name)
-    config["default"] = args.name
-    save_config(config)
-    logging.info("Default context switched to '%s'", args.name)
-
-
 # -----------------------------
 # CLI entrypoint
 # -----------------------------
@@ -413,13 +404,6 @@ def main():
     # version
     version_parser = subparsers.add_parser("version", help="Print agent version")
     version_parser.set_defaults(func=cmd_version)
-
-    # set-instance
-    set_instance_parser = subparsers.add_parser(
-        "set-instance", help="Set default instance"
-    )
-    set_instance_parser.add_argument("name", help="Instance name to use as default")
-    set_instance_parser.set_defaults(func=cmd_set_instance)
 
     args = parser.parse_args()
     args.func(args)
