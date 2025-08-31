@@ -25,6 +25,7 @@ current_version = "0.1.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "chore: bump version {old_version} -> {new_version}"
 tag_message = "chore: :bookmark: release {new_version}"
+commit = true
 push = true
 
 [project.scripts]
