@@ -27,6 +27,13 @@ commit_message = "chore: bump version {old_version} -> {new_version}"
 tag_message = "chore: :bookmark: release {new_version}"
 commit = true
 push = true
+tag = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+    'version = "{version}"',
+]
 
 [project.scripts]
 kener-agent = "kener_agent.cli:main"
