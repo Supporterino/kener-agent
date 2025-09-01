@@ -1,10 +1,14 @@
 import logging
 from typing import Any
 from tabulate import tabulate
-from pathlib import Path
 
 from config import save_instance, load_config, set_default_instance, list_instances
 from api import KenerAPI
+from monitor import (
+    load_yaml_files_from_folder,
+    load_monitors_from_yaml,
+    validate_monitor,
+)
 
 def cmd_login(args: Any) -> None:
     """
@@ -41,7 +45,7 @@ def cmd_apply(args: Any) -> None:
     folder = args.folder if args.folder else folder
 
     try:
-        yaml_files = KenerAPI.load_yaml_files_from_folder(folder)
+        yaml_files = load_yaml_files_from_folder(folder)
     except Exception as e:
         logging.error("Failed to load YAML files from folder '%s': %s", folder, e)
         return
@@ -53,7 +57,7 @@ def cmd_apply(args: Any) -> None:
     seen_tags = set()
     for yaml_file in yaml_files:
         logging.info("Processing file: %s", yaml_file)
-        monitors = KenerAPI.load_monitors_from_yaml(yaml_file)
+        monitors = load_monitors_from_yaml(yaml_file)
         if not monitors:
             logging.warning("No monitors found in file: %s", yaml_file)
             continue
@@ -66,6 +70,9 @@ def cmd_apply(args: Any) -> None:
                 logging.warning("Duplicate monitor tag '%s' in YAML files.", tag)
                 continue
             seen_tags.add(tag)
+            if not validate_monitor(monitor):
+                logging.warning("Invalid monitor definition in %s: %s", yaml_file, monitor)
+                continue
             try:
                 if api.monitor_exists(tag):
                     logging.info(
@@ -74,9 +81,6 @@ def cmd_apply(args: Any) -> None:
                         tag,
                     )
                     continue
-
-                monitor = api.resolve_group_monitors(monitor)
-                monitor = api.apply_monitor_defaults(monitor)
                 api.create_monitor(monitor)
             except Exception as e:
                 logging.error("Error processing monitor with tag '%s': %s", tag, e)
