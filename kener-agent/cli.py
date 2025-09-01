@@ -10,43 +10,86 @@ def cmd_login(args: Any) -> None:
     """
     Save a new instance configuration.
     """
-    save_instance(
-        args.name, args.host, args.port, args.token, args.folder, args.default
-    )
+    try:
+        if not args.name or not args.host or not args.token or not args.folder:
+            logging.error("Missing required arguments for login.")
+            return
+        save_instance(
+            args.name, args.host, args.port, args.token, args.folder, args.default
+        )
+        logging.info("Instance '%s' saved successfully.", args.name)
+    except Exception as e:
+        logging.error("Failed to save instance: %s", e)
 
 def cmd_apply(args: Any) -> None:
     """
     Apply monitors from YAML files to the API.
     """
-    cfg = load_config(args.instance)
-    host, port, token, folder = cfg["host"], cfg["port"], cfg["token"], cfg["folder"]
+    try:
+        cfg = load_config(args.instance)
+    except Exception as e:
+        logging.error("Failed to load config: %s", e)
+        return
+
+    try:
+        host, port, token, folder = cfg["host"], cfg["port"], cfg["token"], cfg["folder"]
+    except KeyError as e:
+        logging.error("Missing required config key: %s", e)
+        return
 
     api = KenerAPI(host, port, token)
     folder = args.folder if args.folder else folder
-    yaml_files = KenerAPI.load_yaml_files_from_folder(folder)
 
+    try:
+        yaml_files = KenerAPI.load_yaml_files_from_folder(folder)
+    except Exception as e:
+        logging.error("Failed to load YAML files from folder '%s': %s", folder, e)
+        return
+
+    if not yaml_files:
+        logging.warning("No YAML files found in folder '%s'", folder)
+        return
+
+    seen_tags = set()
     for yaml_file in yaml_files:
         logging.info("Processing file: %s", yaml_file)
         monitors = KenerAPI.load_monitors_from_yaml(yaml_file)
+        if not monitors:
+            logging.warning("No monitors found in file: %s", yaml_file)
+            continue
         for monitor in monitors:
             tag = monitor.get("tag")
-            if tag and api.monitor_exists(tag):
-                logging.info(
-                    "Skipping creation of monitor '%s' (tag '%s').",
-                    monitor.get("name"),
-                    tag,
-                )
+            if not tag:
+                logging.warning("Monitor in %s missing 'tag': %s", yaml_file, monitor)
                 continue
+            if tag in seen_tags:
+                logging.warning("Duplicate monitor tag '%s' in YAML files.", tag)
+                continue
+            seen_tags.add(tag)
+            try:
+                if api.monitor_exists(tag):
+                    logging.info(
+                        "Skipping creation of monitor '%s' (tag '%s').",
+                        monitor.get("name"),
+                        tag,
+                    )
+                    continue
 
-            monitor = api.resolve_group_monitors(monitor)
-            monitor = api.apply_monitor_defaults(monitor)
-            api.create_monitor(monitor)
+                monitor = api.resolve_group_monitors(monitor)
+                monitor = api.apply_monitor_defaults(monitor)
+                api.create_monitor(monitor)
+            except Exception as e:
+                logging.error("Error processing monitor with tag '%s': %s", tag, e)
 
 def cmd_set_default(args: Any) -> None:
     """
     Set the default instance.
     """
-    set_default_instance(args.name)
+    try:
+        set_default_instance(args.name)
+        logging.info("Default instance set to '%s'", args.name)
+    except Exception as e:
+        logging.error("Failed to set default instance: %s", e)
 
 def cmd_list(args: Any) -> None:
     """
@@ -57,9 +100,12 @@ def cmd_list(args: Any) -> None:
     except FileNotFoundError as e:
         logging.error(str(e))
         return
+    except Exception as e:
+        logging.error("Failed to list instances: %s", e)
+        return
 
-    instances = info["instances"]
-    default_instance = info["default"]
+    instances = info.get("instances", {})
+    default_instance = info.get("default")
 
     if not instances:
         logging.info("No instances configured.")
@@ -73,11 +119,19 @@ def cmd_list(args: Any) -> None:
         )
 
     headers = ["Default", "Instance", "Host", "Port", "Folder"]
-    print(tabulate(table, headers=headers, tablefmt="fancy_grid"))
+    try:
+        print(tabulate(table, headers=headers, tablefmt="fancy_grid"))
+    except Exception as e:
+        logging.error("Failed to print table: %s", e)
+        for row in table:
+            print(row)
 
 def cmd_version(args: Any) -> None:
     """
     Print the agent version.
     """
-    from .version import get_version
-    print(get_version())
+    try:
+        from version import get_version
+        print(get_version())
+    except Exception as e:
+        logging.error("Failed to get version: %s", e)

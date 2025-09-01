@@ -1,10 +1,12 @@
 import argparse
+import logging
 from logging_utils import setup_logging
 from cli import cmd_login, cmd_apply, cmd_set_default, cmd_list, cmd_version
 
 def main():
     parser = argparse.ArgumentParser(prog="kener-agent", description="Kener Agent CLI")
     parser.add_argument('--log-level', default='INFO', help='Set log level (DEBUG, INFO, WARNING, ERROR)')
+    parser.add_argument('--log-file', help='Optional log file path')
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # login command
@@ -49,8 +51,20 @@ def main():
     version_parser.set_defaults(func=cmd_version)
 
     args = parser.parse_args()
-    setup_logging(args.log_level)
-    args.func(args)
+    setup_logging(args.log_level, getattr(args, "log_file", None))
+    logging.debug("Parsed arguments: %s", args)
+
+    if not hasattr(args, "func"):
+        logging.error("No command specified. Use --help for usage.")
+        parser.print_help()
+        return
+
+    try:
+        logging.debug("Dispatching to command: %s", args.command)
+        args.func(args)
+    except Exception as e:
+        logging.exception("An unexpected error occurred while executing the command: %s", e)
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()

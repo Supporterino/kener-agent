@@ -16,11 +16,16 @@ class KenerAPI:
         self.host = host
         self.port = port
         self.token = token
-        self.conn = http.client.HTTPConnection(host, port)
+        try:
+            self.conn = http.client.HTTPConnection(host, port, timeout=10)
+        except Exception as e:
+            logging.error("Failed to create HTTP connection to %s:%s: %s", host, port, e)
+            raise
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
         }
+        logging.debug("Initialized KenerAPI with host=%s, port=%s", host, port)
 
     def monitor_exists(self, tag: str) -> bool:
         """
@@ -28,11 +33,19 @@ class KenerAPI:
         """
         from urllib.parse import urlencode
 
+        if not tag:
+            logging.error("monitor_exists called with empty tag")
+            return False
+
         query = urlencode({"tag": tag})
         path = f"/api/monitor?{query}"
-        self.conn.request("GET", path, headers=self.headers)
-        res = self.conn.getresponse()
-        data = res.read().decode("utf-8")
+        try:
+            self.conn.request("GET", path, headers=self.headers)
+            res = self.conn.getresponse()
+            data = res.read().decode("utf-8")
+        except Exception as e:
+            logging.error("Network error while checking monitor '%s': %s", tag, e)
+            return False
 
         if res.status != 200:
             logging.warning(
@@ -42,7 +55,8 @@ class KenerAPI:
 
         try:
             monitors = json.loads(data)
-            exists = len(monitors) > 0
+            exists = isinstance(monitors, list) and len(monitors) > 0
+            logging.debug("Monitor check for tag '%s': exists=%s, response=%s", tag, exists, monitors)
             if exists:
                 logging.info("Monitor with tag '%s' already exists.", tag)
             return exists
@@ -58,11 +72,19 @@ class KenerAPI:
         """
         from urllib.parse import urlencode
 
+        if not tag:
+            logging.error("get_monitor_by_tag called with empty tag")
+            return None
+
         query = urlencode({"tag": tag})
         path = f"/api/monitor?{query}"
-        self.conn.request("GET", path, headers=self.headers)
-        res = self.conn.getresponse()
-        data = res.read().decode("utf-8")
+        try:
+            self.conn.request("GET", path, headers=self.headers)
+            res = self.conn.getresponse()
+            data = res.read().decode("utf-8")
+        except Exception as e:
+            logging.error("Network error while fetching monitor '%s': %s", tag, e)
+            return None
 
         if res.status != 200:
             logging.warning(
@@ -74,6 +96,7 @@ class KenerAPI:
             monitors = json.loads(data)
             if isinstance(monitors, list) and monitors:
                 monitor = monitors[0]
+                logging.debug("Fetched monitor for tag '%s': %s", tag, monitor)
                 logging.info("Resolved tag '%s' → monitor id '%s'", tag, monitor.get("id"))
                 return monitor
             else:
@@ -91,11 +114,19 @@ class KenerAPI:
         """
         For group monitors, resolve and attach child monitor details.
         """
+        if not isinstance(monitor, dict):
+            logging.error("resolve_group_monitors called with non-dict: %s", monitor)
+            return monitor
+
         if monitor.get("monitor_type") != "GROUP":
             return monitor
 
         type_data = monitor.get("type_data", {})
         child_monitors = type_data.get("monitors", [])
+
+        if not isinstance(child_monitors, list):
+            logging.warning("Group monitor 'type_data.monitors' is not a list: %s", child_monitors)
+            child_monitors = []
 
         resolved_children = []
         for child in child_monitors:
@@ -114,17 +145,24 @@ class KenerAPI:
                         "selected": True,
                     }
                 )
+            else:
+                logging.warning("Child monitor with tag '%s' could not be resolved.", child_tag)
 
-        monitor["type_data"]["monitors"] = resolved_children
+        monitor.setdefault("type_data", {})["monitors"] = resolved_children
         logging.info(
             "Resolved group '%s' monitors → %s", monitor.get("name"), resolved_children
         )
+        logging.debug("Group monitor after resolving children: %s", monitor)
         return monitor
 
     def apply_monitor_defaults(self, monitor: Dict[str, Any]) -> Dict[str, Any]:
         """
         Apply default values to a monitor dict if not present.
         """
+        if not isinstance(monitor, dict):
+            logging.error("apply_monitor_defaults called with non-dict: %s", monitor)
+            return monitor
+
         defaults = {
             "cron": "* * * * *",
             "day_degraded_minimum_count": 1,
@@ -145,20 +183,34 @@ class KenerAPI:
         for key, value in defaults.items():
             monitor.setdefault(key, value)
 
+        logging.debug("Monitor after applying defaults: %s", monitor)
         return monitor
 
     def create_monitor(self, monitor: Dict[str, Any]) -> None:
         """
         Create a new monitor via the API.
         """
-        payload = json.dumps(monitor)
-        self.conn.request("POST", "/api/monitor", payload, self.headers)
+        if not isinstance(monitor, dict):
+            logging.error("create_monitor called with non-dict: %s", monitor)
+            return
 
-        res = self.conn.getresponse()
-        data = res.read().decode("utf-8")
+        try:
+            payload = json.dumps(monitor)
+        except Exception as e:
+            logging.error("Failed to serialize monitor to JSON: %s", e)
+            return
+
+        try:
+            self.conn.request("POST", "/api/monitor", payload, self.headers)
+            res = self.conn.getresponse()
+            data = res.read().decode("utf-8")
+        except Exception as e:
+            logging.error("Network error while creating monitor '%s': %s", monitor.get("name"), e)
+            return
 
         if res.status == 201:
             logging.info("Monitor '%s' created successfully.", monitor.get("name"))
+            logging.debug("API response: %s", data)
         else:
             logging.error(
                 "Failed to create monitor '%s' → %s: %s",
@@ -173,7 +225,11 @@ class KenerAPI:
         Load and return sorted YAML files from a folder.
         """
         folder = Path(folder_path)
+        if not folder.exists():
+            logging.error("Folder '%s' does not exist.", folder_path)
+            raise ValueError(f"'{folder_path}' does not exist")
         if not folder.is_dir():
+            logging.error("'%s' is not a directory.", folder_path)
             raise ValueError(f"'{folder_path}' is not a valid folder")
 
         yaml_files = sorted(
@@ -184,11 +240,15 @@ class KenerAPI:
             ],
             key=lambda f: f.name,
         )
-        logging.info(
-            "Found %d YAML files to process: %s",
-            len(yaml_files),
-            [f.name for f in yaml_files],
-        )
+        if not yaml_files:
+            logging.warning("No YAML files found in folder '%s'", folder_path)
+        else:
+            logging.info(
+                "Found %d YAML files to process: %s",
+                len(yaml_files),
+                [f.name for f in yaml_files],
+            )
+        logging.debug("YAML files found: %s", yaml_files)
         return yaml_files
 
     @staticmethod
@@ -196,6 +256,20 @@ class KenerAPI:
         """
         Load monitors from a YAML file.
         """
-        with open(yaml_file, "r") as f:
-            config = yaml.safe_load(f)
-        return config.get("monitors", [])
+        try:
+            with open(yaml_file, "r") as f:
+                config = yaml.safe_load(f)
+        except Exception as e:
+            logging.error("Failed to load YAML file %s: %s", yaml_file, e)
+            return []
+
+        if not config or "monitors" not in config:
+            logging.warning("No 'monitors' key found in YAML file %s", yaml_file)
+            return []
+
+        if not isinstance(config["monitors"], list):
+            logging.error("'monitors' key in %s is not a list", yaml_file)
+            return []
+
+        logging.debug("Loaded %d monitors from %s", len(config["monitors"]), yaml_file)
+        return config["monitors"]
