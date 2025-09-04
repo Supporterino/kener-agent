@@ -1,9 +1,9 @@
 import http.client
 import json
 import logging
-from typing import Optional, Any
+from typing import Optional
 
-from .types import Monitor, MonitorStatus, MonitorType, monitor_from_dict, monitor_to_dict
+from .types import Monitor
 from .monitor import (
     apply_monitor_defaults,
     resolve_group_monitors,
@@ -97,7 +97,7 @@ class KenerAPI:
         try:
             monitors = json.loads(data)
             if isinstance(monitors, list) and monitors:
-                monitor = monitor_from_dict(monitors[0])
+                monitor = Monitor.monitor_from_dict(monitors[0])
                 logging.debug("Fetched monitor for tag '%s': %s", tag, monitor)
                 logging.info("Resolved tag '%s' → monitor id '%s'", tag, monitor.id)
                 return monitor
@@ -125,7 +125,7 @@ class KenerAPI:
         monitor = apply_monitor_defaults(monitor)
 
         try:
-            payload = json.dumps(monitor_to_dict(monitor))
+            payload = json.dumps(monitor.monitor_to_dict())
         except Exception as e:
             logging.error("Failed to serialize monitor to JSON: %s", e)
             return

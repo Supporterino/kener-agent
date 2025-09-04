@@ -63,27 +63,7 @@ def load_monitors_from_yaml(yaml_file: Path) -> List[Monitor]:
     monitors = []
     for m in config["monitors"]:
         try:
-            monitor = Monitor(
-                id=m.get("id", 0),
-                name=m["name"],
-                description=m.get("description", ""),
-                category_name=m.get("category_name", ""),
-                created_at=m.get("created_at", ""),
-                updated_at=m.get("updated_at", ""),
-                cron=m.get("cron", "* * * * *"),
-                day_degraded_minimum_count=m.get("day_degraded_minimum_count", 1),
-                day_down_minimum_count=m.get("day_down_minimum_count", 1),
-                default_status=MonitorStatus(m.get("default_status", "NONE")),
-                degraded_trigger=m.get("degraded_trigger"),
-                down_trigger=m.get("down_trigger"),
-                image=m.get("image", ""),
-                include_degraded_in_downtime=m.get("include_degraded_in_downtime", "NO"),
-                monitor_type=MonitorType(m["monitor_type"]),
-                status=MonitorStatus(m.get("status", "NONE")),
-                tag=m["tag"],
-                type_data=m.get("type_data", {}),
-            )
-            monitors.append(monitor)
+            monitors.append(Monitor.monitor_from_dict(m))
         except Exception as e:
             logging.error("Failed to parse monitor from YAML: %s", e)
             continue

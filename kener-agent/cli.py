@@ -2,7 +2,13 @@ import logging
 from typing import Any, Set
 from tabulate import tabulate
 
-from config import save_instance, load_config, set_default_instance, list_instances
+from config import (
+    save_config_instance,
+    load_config,
+    set_default_instance,
+    list_instances,
+    ConfigInstance,
+)
 from api import KenerAPI
 from monitor import (
     load_yaml_files_from_folder,
@@ -19,7 +25,7 @@ def cmd_login(args: Any) -> None:
         if not args.name or not args.host or not args.token or not args.folder:
             logging.error("Missing required arguments for login.")
             return
-        save_instance(
+        save_config_instance(
             args.name, args.host, args.port, args.token, args.folder, args.default
         )
         logging.info("Instance '%s' saved successfully.", args.name)
@@ -31,15 +37,15 @@ def cmd_apply(args: Any) -> None:
     Apply monitors from YAML files to the API.
     """
     try:
-        cfg = load_config(args.instance)
+        cfg: ConfigInstance = load_config(args.instance)
     except Exception as e:
         logging.error("Failed to load config: %s", e)
         return
 
     try:
-        host, port, token, folder = cfg["host"], cfg["port"], cfg["token"], cfg["folder"]
-    except KeyError as e:
-        logging.error("Missing required config key: %s", e)
+        host, port, token, folder = cfg.host, cfg.port, cfg.token, cfg.folder
+    except AttributeError as e:
+        logging.error("Missing required config attribute: %s", e)
         return
 
     api = KenerAPI(host, port, token)
@@ -122,8 +128,12 @@ def cmd_list(args: Any) -> None:
     table = []
     for name, inst in instances.items():
         marker = "*" if name == default_instance else ""
+        # inst is a dict if you use asdict, or a ConfigInstance if you return dataclasses
+        host = inst["host"] if isinstance(inst, dict) else inst.host
+        port = inst["port"] if isinstance(inst, dict) else inst.port
+        folder = inst["folder"] if isinstance(inst, dict) else inst.folder
         table.append(
-            [marker, name, inst.get("host"), inst.get("port"), inst.get("folder")]
+            [marker, name, host, port, folder]
         )
 
     headers = ["Default", "Instance", "Host", "Port", "Folder"]
