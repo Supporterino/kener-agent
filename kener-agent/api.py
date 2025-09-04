@@ -1,9 +1,10 @@
 import http.client
 import json
 import logging
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 
-from monitor import (
+from .types import Monitor, MonitorStatus, MonitorType, monitor_from_dict, monitor_to_dict
+from .monitor import (
     apply_monitor_defaults,
     resolve_group_monitors,
 )
@@ -67,7 +68,7 @@ class KenerAPI:
             )
             return False
 
-    def get_monitor_by_tag(self, tag: str) -> Optional[Dict[str, Any]]:
+    def get_monitor_by_tag(self, tag: str) -> Optional[Monitor]:
         """
         Fetch a monitor by its tag.
         """
@@ -96,9 +97,9 @@ class KenerAPI:
         try:
             monitors = json.loads(data)
             if isinstance(monitors, list) and monitors:
-                monitor = monitors[0]
+                monitor = monitor_from_dict(monitors[0])
                 logging.debug("Fetched monitor for tag '%s': %s", tag, monitor)
-                logging.info("Resolved tag '%s' → monitor id '%s'", tag, monitor.get("id"))
+                logging.info("Resolved tag '%s' → monitor id '%s'", tag, monitor.id)
                 return monitor
             else:
                 logging.warning("No monitor found for tag '%s'", tag)
@@ -111,12 +112,12 @@ class KenerAPI:
             )
             return None
 
-    def create_monitor(self, monitor: Dict[str, Any]) -> None:
+    def create_monitor(self, monitor: Monitor) -> None:
         """
         Create a new monitor via the API.
         """
-        if not isinstance(monitor, dict):
-            logging.error("create_monitor called with non-dict: %s", monitor)
+        if not isinstance(monitor, Monitor):
+            logging.error("create_monitor called with non-Monitor: %s", monitor)
             return
 
         # Use monitor helpers for group resolution and defaults
@@ -124,7 +125,7 @@ class KenerAPI:
         monitor = apply_monitor_defaults(monitor)
 
         try:
-            payload = json.dumps(monitor)
+            payload = json.dumps(monitor_to_dict(monitor))
         except Exception as e:
             logging.error("Failed to serialize monitor to JSON: %s", e)
             return
@@ -134,16 +135,16 @@ class KenerAPI:
             res = self.conn.getresponse()
             data = res.read().decode("utf-8")
         except Exception as e:
-            logging.error("Network error while creating monitor '%s': %s", monitor.get("name"), e)
+            logging.error("Network error while creating monitor '%s': %s", monitor.name, e)
             return
 
         if res.status == 201:
-            logging.info("Monitor '%s' created successfully.", monitor.get("name"))
+            logging.info("Monitor '%s' created successfully.", monitor.name)
             logging.debug("API response: %s", data)
         else:
             logging.error(
                 "Failed to create monitor '%s' → %s: %s",
-                monitor.get("name"),
+                monitor.name,
                 res.status,
                 data,
             )

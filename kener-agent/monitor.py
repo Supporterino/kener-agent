@@ -1,45 +1,50 @@
 import logging
-from typing import Dict, Any, List, Optional, Callable
+from typing import List, Optional, Callable
 from datetime import datetime, timezone
 from pathlib import Path
 import yaml
 import re
 
-def apply_monitor_defaults(monitor: Dict[str, Any]) -> Dict[str, Any]:
+from .types import Monitor, MonitorType, MonitorStatus
+
+def apply_monitor_defaults(monitor: Monitor) -> Monitor:
     """
-    Apply default values to a monitor dict if not present.
+    Apply default values to a Monitor object if not present.
     """
-    if not isinstance(monitor, dict):
-        logging.error("apply_monitor_defaults called with non-dict: %s", monitor)
+    if not isinstance(monitor, Monitor):
+        logging.error("apply_monitor_defaults called with non-Monitor: %s", monitor)
         return monitor
 
-    defaults = {
-        "cron": "* * * * *",
-        "day_degraded_minimum_count": 1,
-        "day_down_minimum_count": 1,
-        "default_status": "NONE",
-        "degraded_trigger": None,
-        "down_trigger": None,
-        "include_degraded_in_downtime": "NO",
-        "status": "ACTIVE",
-        "description": "",
-    }
-
-    if "created_at" not in monitor:
-        monitor["created_at"] = datetime.now(timezone.utc).strftime(
-            "%Y-%m-%dT%H:%M:%S.000Z"
-        )
-
-    for key, value in defaults.items():
-        monitor.setdefault(key, value)
+    if not monitor.cron:
+        monitor.cron = "* * * * *"
+    if not monitor.day_degraded_minimum_count:
+        monitor.day_degraded_minimum_count = 1
+    if not monitor.day_down_minimum_count:
+        monitor.day_down_minimum_count = 1
+    if not monitor.default_status:
+        monitor.default_status = MonitorStatus.NONE
+    if not hasattr(monitor, "degraded_trigger"):
+        monitor.degraded_trigger = None
+    if not hasattr(monitor, "down_trigger"):
+        monitor.down_trigger = None
+    if not monitor.include_degraded_in_downtime:
+        monitor.include_degraded_in_downtime = "NO"
+    if not monitor.status:
+        monitor.status = MonitorStatus.NONE
+    if not monitor.description:
+        monitor.description = ""
+    if not monitor.created_at:
+        monitor.created_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
     logging.debug("Monitor after applying defaults: %s", monitor)
     return monitor
 
-def load_monitors_from_yaml(yaml_file: Path) -> List[Dict[str, Any]]:
+def load_monitors_from_yaml(yaml_file: Path) -> List[Monitor]:
     """
-    Load monitors from a YAML file.
+    Load monitors from a YAML file and return as Monitor objects.
     """
+    from .types import Monitor, MonitorType, MonitorStatus
+
     try:
         with open(yaml_file, "r") as f:
             config = yaml.safe_load(f)
@@ -55,8 +60,36 @@ def load_monitors_from_yaml(yaml_file: Path) -> List[Dict[str, Any]]:
         logging.error("'monitors' key in %s is not a list", yaml_file)
         return []
 
-    logging.debug("Loaded %d monitors from %s", len(config["monitors"]), yaml_file)
-    return config["monitors"]
+    monitors = []
+    for m in config["monitors"]:
+        try:
+            monitor = Monitor(
+                id=m.get("id", 0),
+                name=m["name"],
+                description=m.get("description", ""),
+                category_name=m.get("category_name", ""),
+                created_at=m.get("created_at", ""),
+                updated_at=m.get("updated_at", ""),
+                cron=m.get("cron", "* * * * *"),
+                day_degraded_minimum_count=m.get("day_degraded_minimum_count", 1),
+                day_down_minimum_count=m.get("day_down_minimum_count", 1),
+                default_status=MonitorStatus(m.get("default_status", "NONE")),
+                degraded_trigger=m.get("degraded_trigger"),
+                down_trigger=m.get("down_trigger"),
+                image=m.get("image", ""),
+                include_degraded_in_downtime=m.get("include_degraded_in_downtime", "NO"),
+                monitor_type=MonitorType(m["monitor_type"]),
+                status=MonitorStatus(m.get("status", "NONE")),
+                tag=m["tag"],
+                type_data=m.get("type_data", {}),
+            )
+            monitors.append(monitor)
+        except Exception as e:
+            logging.error("Failed to parse monitor from YAML: %s", e)
+            continue
+
+    logging.debug("Loaded %d monitors from %s", len(monitors), yaml_file)
+    return monitors
 
 def load_yaml_files_from_folder(folder_path: str) -> List[Path]:
     """
@@ -90,21 +123,21 @@ def load_yaml_files_from_folder(folder_path: str) -> List[Path]:
     return yaml_files
 
 def resolve_group_monitors(
-    monitor: Dict[str, Any],
-    get_monitor_by_tag_func: Callable[[str], Optional[Dict[str, Any]]],
-) -> Dict[str, Any]:
+    monitor: Monitor,
+    get_monitor_by_tag_func: Callable[[str], Optional[Monitor]],
+) -> Monitor:
     """
     For group monitors, resolve and attach child monitor details.
-    get_monitor_by_tag_func should be a function(tag: str) -> Optional[Dict[str, Any]]
+    get_monitor_by_tag_func should be a function(tag: str) -> Optional[Monitor]
     """
-    if not isinstance(monitor, dict):
-        logging.error("resolve_group_monitors called with non-dict: %s", monitor)
+    if not isinstance(monitor, Monitor):
+        logging.error("resolve_group_monitors called with non-Monitor: %s", monitor)
         return monitor
 
-    if monitor.get("monitor_type") != "GROUP":
+    if monitor.monitor_type != MonitorType.GROUP:
         return monitor
 
-    type_data = monitor.get("type_data", {})
+    type_data = monitor.type_data or {}
     child_monitors = type_data.get("monitors", [])
 
     if not isinstance(child_monitors, list):
@@ -122,29 +155,29 @@ def resolve_group_monitors(
         if child_monitor:
             resolved_children.append(
                 {
-                    "id": child_monitor.get("id"),
-                    "tag": child_monitor.get("tag"),
-                    "name": child_monitor.get("name"),
+                    "id": child_monitor.id,
+                    "tag": child_monitor.tag,
+                    "name": child_monitor.name,
                     "selected": True,
                 }
             )
         else:
             logging.warning("Child monitor with tag '%s' could not be resolved.", child_tag)
 
-    monitor.setdefault("type_data", {})["monitors"] = resolved_children
+    monitor.type_data["monitors"] = resolved_children
     logging.info(
-        "Resolved group '%s' monitors → %s", monitor.get("name"), resolved_children
+        "Resolved group '%s' monitors → %s", monitor.name, resolved_children
     )
     logging.debug("Group monitor after resolving children: %s", monitor)
     return monitor
 
-def validate_monitor(monitor: Dict[str, Any]) -> bool:
+def validate_monitor(monitor: Monitor) -> bool:
     """
     Validate a monitor definition. Returns True if valid, False otherwise.
     """
     required_fields = ["tag", "name", "monitor_type"]
     for field in required_fields:
-        if field not in monitor:
+        if not getattr(monitor, field, None):
             logging.error("Monitor missing required field '%s': %s", field, monitor)
             return False
     # Add more validation as needed

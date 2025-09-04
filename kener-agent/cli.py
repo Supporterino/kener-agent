@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Set
 from tabulate import tabulate
 
 from config import save_instance, load_config, set_default_instance, list_instances
@@ -9,6 +9,7 @@ from monitor import (
     load_monitors_from_yaml,
     validate_monitor,
 )
+from types import Monitor
 
 def cmd_login(args: Any) -> None:
     """
@@ -54,7 +55,7 @@ def cmd_apply(args: Any) -> None:
         logging.warning("No YAML files found in folder '%s'", folder)
         return
 
-    seen_tags = set()
+    seen_tags: Set[str] = set()
     for yaml_file in yaml_files:
         logging.info("Processing file: %s", yaml_file)
         monitors = load_monitors_from_yaml(yaml_file)
@@ -62,7 +63,10 @@ def cmd_apply(args: Any) -> None:
             logging.warning("No monitors found in file: %s", yaml_file)
             continue
         for monitor in monitors:
-            tag = monitor.get("tag")
+            if not isinstance(monitor, Monitor):
+                logging.warning("Invalid monitor object in %s: %s", yaml_file, monitor)
+                continue
+            tag = monitor.tag
             if not tag:
                 logging.warning("Monitor in %s missing 'tag': %s", yaml_file, monitor)
                 continue
@@ -77,7 +81,7 @@ def cmd_apply(args: Any) -> None:
                 if api.monitor_exists(tag):
                     logging.info(
                         "Skipping creation of monitor '%s' (tag '%s').",
-                        monitor.get("name"),
+                        monitor.name,
                         tag,
                     )
                     continue
