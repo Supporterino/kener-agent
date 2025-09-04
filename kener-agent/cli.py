@@ -153,3 +153,36 @@ def cmd_version(args: Any) -> None:
         print(get_version())
     except Exception as e:
         logging.error("Failed to get version: %s", e)
+
+def cmd_list_monitors(args: Any) -> None:
+    """
+    List all configured monitors.
+    """
+    try:
+        cfg: ConfigInstance = load_config(args.instance)
+    except Exception as e:
+        logging.error("Failed to load config: %s", e)
+        return
+
+    try:
+        host, port, token, folder = cfg.host, cfg.port, cfg.token, cfg.folder
+    except AttributeError as e:
+        logging.error("Missing required config attribute: %s", e)
+        return
+
+    api = KenerAPI(host, port, token)
+
+    monitors = api.get_monitors()
+
+    if not monitors:
+        logging.info("No monitors configured.")
+        return
+
+    headers = args.columns
+    table = [[monitor.get(col, "") for col in headers] for monitor in monitors]
+    try:
+        print(tabulate(table, headers=headers, tablefmt="fancy_grid"))
+    except Exception as e:
+        logging.error("Failed to print table: %s", e)
+        for row in table:
+            print(row)
