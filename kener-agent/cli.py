@@ -7,6 +7,7 @@ from config import (
     load_config,
     set_default_instance,
     list_instances,
+    logout_instance
 )
 from api import KenerAPI
 from monitor import (
@@ -15,6 +16,7 @@ from monitor import (
     validate_monitor,
 )
 from classes import Monitor, ConfigInstance
+
 
 def cmd_login(args: Any) -> None:
     """
@@ -30,6 +32,20 @@ def cmd_login(args: Any) -> None:
         logging.info("Instance '%s' saved successfully.", args.name)
     except Exception as e:
         logging.error("Failed to save instance: %s", e)
+
+
+def cmd_logout(args: Any) -> None:
+    """
+    Remove an instance from the configuration.
+    If the removed instance is the current default, a new default
+    must be supplied via ``--new-default``.
+    """
+    try:
+        logout_instance(args.name, new_default=args.new_default)
+        logging.info("Instance '%s' removed successfully.", args.name)
+    except Exception as e:
+        logging.error("Failed to remove instance: %s", e)
+
 
 def cmd_apply(args: Any) -> None:
     """
@@ -94,6 +110,7 @@ def cmd_apply(args: Any) -> None:
             except Exception as e:
                 logging.error("Error processing monitor with tag '%s': %s", tag, e)
 
+
 def cmd_set_default(args: Any) -> None:
     """
     Set the default instance.
@@ -103,6 +120,7 @@ def cmd_set_default(args: Any) -> None:
         logging.info("Default instance set to '%s'", args.name)
     except Exception as e:
         logging.error("Failed to set default instance: %s", e)
+
 
 def cmd_list(args: Any) -> None:
     """
@@ -143,6 +161,7 @@ def cmd_list(args: Any) -> None:
         for row in table:
             print(row)
 
+
 def cmd_version(args: Any) -> None:
     """
     Print the agent version.
@@ -152,6 +171,7 @@ def cmd_version(args: Any) -> None:
         print(get_version())
     except Exception as e:
         logging.error("Failed to get version: %s", e)
+
 
 def cmd_list_monitors(args: Any) -> None:
     """

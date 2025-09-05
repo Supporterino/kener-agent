@@ -9,6 +9,7 @@ from monitor import (
     resolve_group_monitors,
 )
 
+
 class KenerAPI:
     """
     API client for interacting with the Kener Agent backend.
@@ -111,7 +112,7 @@ class KenerAPI:
                 data,
             )
             return None
-        
+
     def get_monitors(self) -> Optional[List[Monitor]]:
         """
         Fetch all monitors.
@@ -126,10 +127,10 @@ class KenerAPI:
 
         if res.status != 200:
             logging.warning(
-                "Failed to fetch monitors → %s: %s",res.status, data
+                "Failed to fetch monitors → %s: %s", res.status, data
             )
             return None
-        
+
         try:
             monitors = json.loads(data)
             if isinstance(monitors, list) and monitors:

@@ -1,5 +1,6 @@
 import logging
 
+
 def get_version() -> str:
     """
     Return the version string for the agent.

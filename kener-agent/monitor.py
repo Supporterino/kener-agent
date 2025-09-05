@@ -7,6 +7,7 @@ import re
 
 from classes import Monitor, MonitorType, MonitorStatus, MonitorCategory
 
+
 def apply_monitor_defaults(monitor: Monitor) -> Monitor:
     """
     Apply default values to a Monitor object if not present.
@@ -39,6 +40,7 @@ def apply_monitor_defaults(monitor: Monitor) -> Monitor:
     logging.debug("Monitor after applying defaults: %s", monitor)
     return monitor
 
+
 def load_monitors_from_yaml(yaml_file: Path) -> List[Monitor]:
     """
     Load monitors from a YAML file and return as Monitor objects.
@@ -68,6 +70,7 @@ def load_monitors_from_yaml(yaml_file: Path) -> List[Monitor]:
 
     logging.debug("Loaded %d monitors from %s", len(monitors), yaml_file)
     return monitors
+
 
 def load_yaml_files_from_folder(folder_path: str) -> List[Path]:
     """
@@ -100,9 +103,10 @@ def load_yaml_files_from_folder(folder_path: str) -> List[Path]:
     logging.debug("YAML files found: %s", yaml_files)
     return yaml_files
 
+
 def resolve_group_monitors(
-    monitor: Monitor,
-    get_monitor_by_tag_func: Callable[[str], Optional[Monitor]],
+        monitor: Monitor,
+        get_monitor_by_tag_func: Callable[[str], Optional[Monitor]],
 ) -> Monitor:
     """
     For group monitors, resolve and attach child monitor details.
@@ -148,6 +152,7 @@ def resolve_group_monitors(
     )
     logging.debug("Group monitor after resolving children: %s", monitor)
     return monitor
+
 
 def validate_monitor(monitor: Monitor) -> bool:
     """
