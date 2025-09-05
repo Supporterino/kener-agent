@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, Optional
 import yaml
 import logging
-from .types import Config, ConfigInstance
+from classes import Config, ConfigInstance
 
 CONFIG_DIR = Path.home() / ".config" / "kener-agent"
 CONFIG_FILE = CONFIG_DIR / "config.yml"

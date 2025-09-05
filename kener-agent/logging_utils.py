@@ -1,5 +1,3 @@
-# logging_utils.py
-
 import logging
 
 def setup_logging(log_level: str = "INFO", log_file: str = None) -> None:

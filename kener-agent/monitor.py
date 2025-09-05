@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 import re
 
-from .types import Monitor, MonitorType, MonitorStatus
+from classes import Monitor, MonitorType, MonitorStatus, MonitorCategory
 
 def apply_monitor_defaults(monitor: Monitor) -> Monitor:
     """
@@ -30,7 +30,7 @@ def apply_monitor_defaults(monitor: Monitor) -> Monitor:
     if not monitor.include_degraded_in_downtime:
         monitor.include_degraded_in_downtime = "NO"
     if not monitor.status:
-        monitor.status = MonitorStatus.NONE
+        monitor.status = MonitorCategory.NONE
     if not monitor.description:
         monitor.description = ""
     if not monitor.created_at:
@@ -43,8 +43,6 @@ def load_monitors_from_yaml(yaml_file: Path) -> List[Monitor]:
     """
     Load monitors from a YAML file and return as Monitor objects.
     """
-    from .types import Monitor, MonitorType, MonitorStatus
-
     try:
         with open(yaml_file, "r") as f:
             config = yaml.safe_load(f)

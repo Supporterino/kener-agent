@@ -1,10 +1,10 @@
 import http.client
 import json
 import logging
-from typing import Optional
+from typing import List, Optional
 
-from .types import Monitor
-from .monitor import (
+from classes import Monitor
+from monitor import (
     apply_monitor_defaults,
     resolve_group_monitors,
 )
@@ -111,6 +111,41 @@ class KenerAPI:
                 data,
             )
             return None
+        
+    def get_monitors(self) -> Optional[List[Monitor]]:
+        """
+        Fetch all monitors.
+        """
+        try:
+            self.conn.request("GET", "/api/monitor", headers=self.headers)
+            res = self.conn.getresponse()
+            data = res.read().decode("utf-8")
+        except Exception as e:
+            logging.error("Network error while fetching monitors: %s", e)
+            return None
+
+        if res.status != 200:
+            logging.warning(
+                "Failed to fetch monitors → %s: %s",res.status, data
+            )
+            return None
+        
+        try:
+            monitors = json.loads(data)
+            if isinstance(monitors, list) and monitors:
+                resolved_monitors = []
+                for monitor in monitors:
+                    resolved_monitors.append(Monitor.monitor_from_dict(monitor))
+                return resolved_monitors
+            else:
+                logging.warning("No monitors found")
+                return None
+        except json.JSONDecodeError:
+            logging.error(
+                "Invalid JSON response while fetching monitors: %s",
+                data,
+            )
+            return None
 
     def create_monitor(self, monitor: Monitor) -> None:
         """
@@ -125,7 +160,7 @@ class KenerAPI:
         monitor = apply_monitor_defaults(monitor)
 
         try:
-            payload = json.dumps(monitor.monitor_to_dict())
+            payload = json.dumps(monitor.to_dict())
         except Exception as e:
             logging.error("Failed to serialize monitor to JSON: %s", e)
             return
