@@ -1,13 +1,12 @@
 import logging
-from typing import Any, Set
+from typing import Any, Set, Dict
 from tabulate import tabulate
-
+import json
 from config import (
     save_config_instance,
     load_config,
     set_default_instance,
     list_instances,
-    ConfigInstance,
 )
 from api import KenerAPI
 from monitor import (
@@ -15,7 +14,7 @@ from monitor import (
     load_monitors_from_yaml,
     validate_monitor,
 )
-from types import Monitor
+from classes import Monitor, ConfigInstance
 
 def cmd_login(args: Any) -> None:
     """
@@ -118,7 +117,7 @@ def cmd_list(args: Any) -> None:
         logging.error("Failed to list instances: %s", e)
         return
 
-    instances = info.get("instances", {})
+    instances: Dict[str, Any] = info.get("instances", {})
     default_instance = info.get("default")
 
     if not instances:
@@ -157,6 +156,8 @@ def cmd_version(args: Any) -> None:
 def cmd_list_monitors(args: Any) -> None:
     """
     List all configured monitors.
+    Pretty‑prints the ``type_data`` column and also formats any multiline
+    sub‑values (e.g. the JavaScript function stored in ``tcpEval``).
     """
     try:
         cfg: ConfigInstance = load_config(args.instance)
@@ -179,7 +180,30 @@ def cmd_list_monitors(args: Any) -> None:
         return
 
     headers = args.columns
-    table = [[monitor.get(col, "") for col in headers] for monitor in monitors]
+    table: list[list[str]] = []
+
+    for monitor in monitors:
+        row = []
+        for col in headers:
+            val = monitor.to_dict().get(col, "")
+            if col == "type_data" and isinstance(val, str):
+                try:
+                    obj = json.loads(val)
+
+                    dumped = json.dumps(obj, indent=2, sort_keys=True)
+                    dumped = dumped.replace("\\n", "\n")
+
+                    lines = dumped.splitlines()
+                    new_lines: list[str] = []
+                    for line in lines:
+                        new_lines.append(line)
+                    val = "\n".join(new_lines)
+
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            row.append(val)
+        table.append(row)
+
     try:
         print(tabulate(table, headers=headers, tablefmt="fancy_grid"))
     except Exception as e:

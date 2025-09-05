@@ -2,6 +2,11 @@ from dataclasses import asdict, dataclass, field
 from typing import Optional, Dict, Any
 from enum import Enum
 
+class MonitorCategory(Enum):
+    NONE = "NONE"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
 class MonitorStatus(Enum):
     NONE = "NONE"
     UP = "UP"
@@ -31,7 +36,7 @@ class Monitor:
     image: str
     include_degraded_in_downtime: str
     monitor_type: MonitorType
-    status: MonitorStatus
+    status: MonitorCategory
     tag: str
     default_status: MonitorStatus = MonitorStatus.NONE
     degraded_trigger: Optional[str] = None
@@ -53,7 +58,7 @@ class Monitor:
             image=data.get("image", ""),
             include_degraded_in_downtime=data.get("include_degraded_in_downtime", "NO"),
             monitor_type=MonitorType(data["monitor_type"]) if not isinstance(data["monitor_type"], MonitorType) else data["monitor_type"],
-            status=MonitorStatus(data.get("status", "NONE")) if not isinstance(data.get("status", "NONE"), MonitorStatus) else data.get("status", "NONE"),
+            status=MonitorCategory(data.get("status", "NONE")) if not isinstance(data.get("status", "NONE"), MonitorCategory) else data.get("status", "NONE"),
             tag=data.get("tag", ""),
             default_status=MonitorStatus(data.get("default_status", "NONE")) if not isinstance(data.get("default_status", "NONE"), MonitorStatus) else data.get("default_status", "NONE"),
             degraded_trigger=data.get("degraded_trigger"),
@@ -61,13 +66,13 @@ class Monitor:
             type_data=data.get("type_data", {}),
         )
 
-    def monitor_to_dict(self) -> dict:
+    def to_dict(self) -> dict:
         d = self.__dict__.copy()
         d["default_status"] = self.default_status.value
         d["monitor_type"] = self.monitor_type.value
         d["status"] = self.status.value
         return d
-    
+
 @dataclass
 class ConfigInstance:
     host: str

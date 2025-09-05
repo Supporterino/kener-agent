@@ -3,8 +3,8 @@ import json
 import logging
 from typing import List, Optional
 
-from .types import Monitor
-from .monitor import (
+from classes import Monitor
+from monitor import (
     apply_monitor_defaults,
     resolve_group_monitors,
 )
@@ -112,7 +112,7 @@ class KenerAPI:
             )
             return None
         
-    def get_monitors(self) -> List[Monitor]:
+    def get_monitors(self) -> Optional[List[Monitor]]:
         """
         Fetch all monitors.
         """
@@ -160,7 +160,7 @@ class KenerAPI:
         monitor = apply_monitor_defaults(monitor)
 
         try:
-            payload = json.dumps(monitor.monitor_to_dict())
+            payload = json.dumps(monitor.to_dict())
         except Exception as e:
             logging.error("Failed to serialize monitor to JSON: %s", e)
             return
