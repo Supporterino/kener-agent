@@ -2,16 +2,19 @@ from dataclasses import asdict, dataclass, field
 from typing import Optional, Dict, Any
 from enum import Enum
 
+
 class MonitorCategory(Enum):
     NONE = "NONE"
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
+
 
 class MonitorStatus(Enum):
     NONE = "NONE"
     UP = "UP"
     DEGRADED = "DEGRADED"
     DOWN = "DOWN"
+
 
 class MonitorType(Enum):
     API = "API"
@@ -21,6 +24,7 @@ class MonitorType(Enum):
     GROUP = "GROUP"
     SSL = "SSL"
     SQL = "SQL"
+
 
 @dataclass
 class Monitor:
@@ -61,15 +65,15 @@ class Monitor:
             image=data.get("image", ""),
             include_degraded_in_downtime=data.get("include_degraded_in_downtime", "NO"),
             monitor_type=MonitorType(data["monitor_type"])
-                if not isinstance(data.get("monitor_type"), MonitorType)
-                else data["monitor_type"],
+            if not isinstance(data.get("monitor_type"), MonitorType)
+            else data["monitor_type"],
             status=MonitorCategory(data.get("status", "NONE"))
-                if not isinstance(data.get("status"), MonitorCategory)
-                else data["status"],
+            if not isinstance(data.get("status"), MonitorCategory)
+            else data["status"],
             tag=data.get("tag", ""),
             default_status=MonitorStatus(data.get("default_status", "NONE"))
-                if not isinstance(data.get("default_status"), MonitorStatus)
-                else data["default_status"],
+            if not isinstance(data.get("default_status"), MonitorStatus)
+            else data["default_status"],
             degraded_trigger=data.get("degraded_trigger"),
             down_trigger=data.get("down_trigger"),
             type_data=data.get("type_data", {}),
@@ -81,12 +85,15 @@ class Monitor:
         d["monitor_type"] = self.monitor_type.value
         d["status"] = self.status.value
         return d
+
+
 @dataclass
 class ConfigInstance:
     host: str
     port: int
     token: str
     folder: str
+
 
 @dataclass
 class Config:

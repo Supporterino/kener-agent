@@ -1,5 +1,6 @@
 import logging
 
+
 def setup_logging(log_level: str = "INFO", log_file: str = None) -> None:
     """
     Set up logging with the specified log level and a standard format.

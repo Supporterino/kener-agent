@@ -17,6 +17,7 @@ from monitor import (
 )
 from classes import Monitor, ConfigInstance
 
+
 def cmd_login(args: Any) -> None:
     """
     Save a new instance configuration.
@@ -32,6 +33,7 @@ def cmd_login(args: Any) -> None:
     except Exception as e:
         logging.error("Failed to save instance: %s", e)
 
+
 def cmd_logout(args: Any) -> None:
     """
     Remove an instance from the configuration.
@@ -43,6 +45,7 @@ def cmd_logout(args: Any) -> None:
         logging.info("Instance '%s' removed successfully.", args.name)
     except Exception as e:
         logging.error("Failed to remove instance: %s", e)
+
 
 def cmd_apply(args: Any) -> None:
     """
@@ -107,6 +110,7 @@ def cmd_apply(args: Any) -> None:
             except Exception as e:
                 logging.error("Error processing monitor with tag '%s': %s", tag, e)
 
+
 def cmd_set_default(args: Any) -> None:
     """
     Set the default instance.
@@ -116,6 +120,7 @@ def cmd_set_default(args: Any) -> None:
         logging.info("Default instance set to '%s'", args.name)
     except Exception as e:
         logging.error("Failed to set default instance: %s", e)
+
 
 def cmd_list(args: Any) -> None:
     """
@@ -156,6 +161,7 @@ def cmd_list(args: Any) -> None:
         for row in table:
             print(row)
 
+
 def cmd_version(args: Any) -> None:
     """
     Print the agent version.
@@ -165,6 +171,7 @@ def cmd_version(args: Any) -> None:
         print(get_version())
     except Exception as e:
         logging.error("Failed to get version: %s", e)
+
 
 def cmd_list_monitors(args: Any) -> None:
     """

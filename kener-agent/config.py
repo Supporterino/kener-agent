@@ -8,13 +8,14 @@ from classes import Config, ConfigInstance
 CONFIG_DIR = Path.home() / ".config" / "kener-agent"
 CONFIG_FILE = CONFIG_DIR / "config.yml"
 
+
 def save_config_instance(
-    name: str,
-    host: str,
-    port: int,
-    token: str,
-    folder: str,
-    set_default: bool = False,
+        name: str,
+        host: str,
+        port: int,
+        token: str,
+        folder: str,
+        set_default: bool = False,
 ) -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     if CONFIG_FILE.exists():
@@ -32,6 +33,7 @@ def save_config_instance(
         yaml.safe_dump(config.to_dict(), f, default_flow_style=False)
     logging.info("Instance '%s' saved to %s", name, CONFIG_FILE)
 
+
 def load_config(instance: Optional[str] = None) -> ConfigInstance:
     if not CONFIG_FILE.exists():
         raise FileNotFoundError(f"No config found at {CONFIG_FILE}. Run `login` first.")
@@ -48,6 +50,7 @@ def load_config(instance: Optional[str] = None) -> ConfigInstance:
         raise ValueError("No default instance set. Please set one with `set-default`.")
     return config.instances[config.default]
 
+
 def set_default_instance(name: str) -> None:
     if not CONFIG_FILE.exists():
         raise FileNotFoundError(f"No config found at {CONFIG_FILE}. Run `login` first.")
@@ -61,6 +64,7 @@ def set_default_instance(name: str) -> None:
         yaml.safe_dump(config.to_dict(), f, default_flow_style=False)
     logging.info("Default instance set to '%s'", name)
 
+
 def list_instances() -> Dict[str, object]:
     if not CONFIG_FILE.exists():
         raise FileNotFoundError(f"No config found at {CONFIG_FILE}.")
@@ -71,6 +75,7 @@ def list_instances() -> Dict[str, object]:
         "instances": {name: asdict(inst) for name, inst in config.instances.items()},
         "default": config.default
     }
+
 
 def logout_instance(name: str, *, new_default: Optional[str] = None) -> None:
     """

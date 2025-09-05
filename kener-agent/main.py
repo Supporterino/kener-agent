@@ -5,6 +5,7 @@ from logging_utils import setup_logging
 from cli import cmd_login, cmd_apply, cmd_set_default, cmd_list, cmd_version, cmd_list_monitors, cmd_logout
 from classes import Monitor
 
+
 def main():
     parser = argparse.ArgumentParser(prog="kener-agent", description="Kener Agent CLI")
     parser.add_argument('--log-level', default='INFO', help='Set log level (DEBUG, INFO, WARNING, ERROR)')
@@ -66,7 +67,10 @@ def main():
     # list monitors command
     possible_columns = [f.name for f in fields(Monitor)]
     list_monitor_parser = subparsers.add_parser("list-monitors", help="List all configured monitors of an instance")
-    list_monitor_parser.add_argument("--columns", nargs="+", help=f"Columns to display. Possible: {', '.join(possible_columns)}", choices=possible_columns, default=["tag", "name", "category_name", "description", "type_data"])
+    list_monitor_parser.add_argument("--columns", nargs="+",
+                                     help=f"Columns to display. Possible: {', '.join(possible_columns)}",
+                                     choices=possible_columns,
+                                     default=["tag", "name", "category_name", "description", "type_data"])
     list_monitor_parser.add_argument("--instance", help="Instance to use (overrides default)")
     list_monitor_parser.set_defaults(func=cmd_list_monitors)
 
@@ -89,6 +93,7 @@ def main():
     except Exception as e:
         logging.exception("An unexpected error occurred while executing the command: %s", e)
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()
