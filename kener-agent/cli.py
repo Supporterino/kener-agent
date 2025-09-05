@@ -7,6 +7,7 @@ from config import (
     load_config,
     set_default_instance,
     list_instances,
+    logout_instance
 )
 from api import KenerAPI
 from monitor import (
@@ -30,6 +31,18 @@ def cmd_login(args: Any) -> None:
         logging.info("Instance '%s' saved successfully.", args.name)
     except Exception as e:
         logging.error("Failed to save instance: %s", e)
+
+def cmd_logout(args: Any) -> None:
+    """
+    Remove an instance from the configuration.
+    If the removed instance is the current default, a new default
+    must be supplied via ``--new-default``.
+    """
+    try:
+        logout_instance(args.name, new_default=args.new_default)
+        logging.info("Instance '%s' removed successfully.", args.name)
+    except Exception as e:
+        logging.error("Failed to remove instance: %s", e)
 
 def cmd_apply(args: Any) -> None:
     """
