@@ -24,7 +24,6 @@ class MonitorType(Enum):
 
 @dataclass
 class Monitor:
-    id: int
     name: str
     description: str
     category_name: str
@@ -38,6 +37,7 @@ class Monitor:
     monitor_type: MonitorType
     status: MonitorCategory
     tag: str
+    id: Optional[int] = None
     default_status: MonitorStatus = MonitorStatus.NONE
     degraded_trigger: Optional[str] = None
     down_trigger: Optional[str] = None
@@ -45,8 +45,11 @@ class Monitor:
 
     @staticmethod
     def monitor_from_dict(data: dict) -> 'Monitor':
+        """
+        Build a Monitor instance from a plain dictionary.
+        """
         return Monitor(
-            id=data["id"],
+            id=data.get("id"),
             name=data["name"],
             description=data.get("description", ""),
             category_name=data.get("category_name", ""),
@@ -57,10 +60,16 @@ class Monitor:
             day_down_minimum_count=data.get("day_down_minimum_count", 1),
             image=data.get("image", ""),
             include_degraded_in_downtime=data.get("include_degraded_in_downtime", "NO"),
-            monitor_type=MonitorType(data["monitor_type"]) if not isinstance(data["monitor_type"], MonitorType) else data["monitor_type"],
-            status=MonitorCategory(data.get("status", "NONE")) if not isinstance(data.get("status", "NONE"), MonitorCategory) else data.get("status", "NONE"),
+            monitor_type=MonitorType(data["monitor_type"])
+                if not isinstance(data.get("monitor_type"), MonitorType)
+                else data["monitor_type"],
+            status=MonitorCategory(data.get("status", "NONE"))
+                if not isinstance(data.get("status"), MonitorCategory)
+                else data["status"],
             tag=data.get("tag", ""),
-            default_status=MonitorStatus(data.get("default_status", "NONE")) if not isinstance(data.get("default_status", "NONE"), MonitorStatus) else data.get("default_status", "NONE"),
+            default_status=MonitorStatus(data.get("default_status", "NONE"))
+                if not isinstance(data.get("default_status"), MonitorStatus)
+                else data["default_status"],
             degraded_trigger=data.get("degraded_trigger"),
             down_trigger=data.get("down_trigger"),
             type_data=data.get("type_data", {}),
@@ -72,7 +81,6 @@ class Monitor:
         d["monitor_type"] = self.monitor_type.value
         d["status"] = self.status.value
         return d
-
 @dataclass
 class ConfigInstance:
     host: str
